@@ -26,7 +26,6 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
         
-        /* Smooth Form Inputs */
         input, select {
             background: rgba(15, 23, 42, 0.6) !important;
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -39,18 +38,19 @@
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
         }
         
-        /* Dropdown options fix for dark mode */
         option { background-color: #1e293b; color: white; }
 
-        /* Animations */
+        /* Custom Scrollbar for Modal */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-up {
-            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-        }
+        .animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-100 { animation-delay: 0.1s; }
         .delay-200 { animation-delay: 0.2s; }
         .delay-300 { animation-delay: 0.3s; }
@@ -61,23 +61,28 @@
     <header class="mb-10 flex justify-between items-center animate-fade-up">
         <div>
             <h1 class="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">Budget Tracker</h1>
-            <p class="text-gray-400 mt-1 text-sm font-medium">Manage your finances seamlessly</p>
+            <p class="text-gray-400 mt-1 text-sm font-medium flex items-center gap-2">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                </span>
+                Auto-syncing live data
+            </p>
         </div>
-        <button onclick="fetchData()" class="bg-sky-500/20 text-sky-400 border border-sky-500/50 px-5 py-2.5 rounded-xl hover:bg-sky-500/40 hover:scale-105 transition-all duration-300 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-            Refresh
-        </button>
     </header>
 
     <!-- Dashboard -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="glass-card p-8 flex flex-col justify-center items-center animate-fade-up delay-100">
+        <div class="glass-card p-8 flex flex-col justify-center items-center animate-fade-up delay-100 relative overflow-hidden">
             <h2 class="text-sm uppercase tracking-wider font-semibold text-gray-400">Total Income</h2>
             <p id="totalIncome" class="text-4xl font-bold text-emerald-400 mt-2 tracking-tight">৳0.00</p>
         </div>
-        <div class="glass-card p-8 flex flex-col justify-center items-center animate-fade-up delay-100">
+        <div class="glass-card p-8 flex flex-col justify-center items-center animate-fade-up delay-100 relative">
             <h2 class="text-sm uppercase tracking-wider font-semibold text-gray-400">Total Expenses</h2>
             <p id="totalExpense" class="text-4xl font-bold text-rose-400 mt-2 tracking-tight">৳0.00</p>
+            <button onclick="openDetailsModal()" class="mt-4 text-xs bg-rose-500/20 text-rose-300 px-4 py-2 rounded-full hover:bg-rose-500/40 transition-colors border border-rose-500/30">
+                View Detailed Breakdown
+            </button>
         </div>
     </div>
 
@@ -100,7 +105,7 @@
                 <input type="date" id="tDate" class="p-3 rounded-xl" required>
                 <select id="tType" class="p-3 rounded-xl" onchange="updateCategoryDropdown()">
                     <option value="Expense">Expense</option>
-                    <option value="Income">Income (e.g. Parents)</option>
+                    <option value="Income">Income</option>
                 </select>
                 <select id="tCategory" class="p-3 rounded-xl" required></select>
                 <input type="number" id="tAmount" placeholder="Amount (৳)" class="p-3 rounded-xl" required>
@@ -127,14 +132,42 @@
         </div>
     </div>
 
+    <!-- SUB-PAGE MODAL FOR DETAILS -->
+    <div id="detailsModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="glass-card w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300 bg-gray-900/90" id="modalContent">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-gray-900/50">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-100">Detailed Expense Summary</h2>
+                    <p class="text-sm text-gray-400 mt-1">A complete history of your spendings</p>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-gray-400 hover:text-rose-400 transition-colors text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-white/10 text-sm uppercase tracking-wider">
+                            <th class="p-3 font-medium">Date</th>
+                            <th class="p-3 font-medium">Category</th>
+                            <th class="p-3 font-medium">Amount</th>
+                            <th class="p-3 font-medium">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseTableBody" class="text-gray-200">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script>
         // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
         const API_URL = 'https://script.google.com/macros/s/AKfycbyoYkZ5YAMsjfdhfKFoicyS7YylvNRF0uf9x1kc1TNDQtDil3pBdakjvddouA1nBmaB/exec';
         
         let globalCategories = [];
+        let globalTransactions = [];
         let expenseChartInstance = null;
 
-        // Configure Chart.js for Dark Mode globally
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = "'Inter', sans-serif";
 
@@ -143,12 +176,16 @@
                 const res = await fetch(API_URL);
                 const data = await res.json();
                 globalCategories = data.categories;
+                globalTransactions = data.transactions;
                 updateCategoryDropdown();
-                updateDashboard(data.transactions);
+                updateDashboard(globalTransactions);
             } catch(e) {
-                console.error("Error fetching data. Check API_URL.");
+                console.error("Error fetching data.");
             }
         }
+
+        // Auto-refresh every 15 seconds
+        setInterval(fetchData, 15000); 
 
         function updateCategoryDropdown() {
             const type = document.getElementById('tType').value;
@@ -171,11 +208,9 @@
                 }
             });
 
-            // Animate number counting effect for Taka
-            animateValue("totalIncome", 0, totalInc, 1000);
-            animateValue("totalExpense", 0, totalExp, 1000);
+            animateValue("totalIncome", parseFloat(document.getElementById('totalIncome').innerText.replace('৳', '') || 0), totalInc, 800);
+            animateValue("totalExpense", parseFloat(document.getElementById('totalExpense').innerText.replace('৳', '') || 0), totalExp, 800);
 
-            // Update Chart with smooth animations
             const ctx = document.getElementById('expenseChart').getContext('2d');
             if (expenseChartInstance) expenseChartInstance.destroy();
             
@@ -186,11 +221,7 @@
                     datasets: [{
                         data: Object.values(expenseBreakdown),
                         backgroundColor: [
-                            'rgba(56, 189, 248, 0.8)', // Sky
-                            'rgba(244, 63, 94, 0.8)',  // Rose
-                            'rgba(16, 185, 129, 0.8)', // Emerald
-                            'rgba(245, 158, 11, 0.8)', // Amber
-                            'rgba(139, 92, 246, 0.8)'  // Violet
+                            'rgba(56, 189, 248, 0.8)', 'rgba(244, 63, 94, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(139, 92, 246, 0.8)'
                         ],
                         borderColor: 'rgba(15, 23, 42, 1)',
                         borderWidth: 2,
@@ -198,23 +229,13 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true,
-                        duration: 1200,
-                        easing: 'easeOutQuart'
-                    },
-                    plugins: {
-                        legend: { position: 'right' }
-                    },
-                    cutout: '70%'
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { animateScale: true, animateRotate: true, duration: 800 },
+                    plugins: { legend: { position: 'right' } }, cutout: '70%'
                 }
             });
         }
 
-        // Helper function for smooth number counting
         function animateValue(id, start, end, duration) {
             if (start === end) return;
             let obj = document.getElementById(id);
@@ -223,19 +244,62 @@
                 if (!startTimestamp) startTimestamp = timestamp;
                 const progress = Math.min((timestamp - startTimestamp) / duration, 1);
                 obj.innerText = '৳' + (progress * (end - start) + start).toFixed(2);
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                }
+                if (progress < 1) window.requestAnimationFrame(step);
             };
             window.requestAnimationFrame(step);
+        }
+
+        // Sub-page Modal Logic
+        function openDetailsModal() {
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            const tbody = document.getElementById('expenseTableBody');
+            
+            // Generate rows for expenses only, sorted newest first
+            const expenses = globalTransactions.filter(t => t.type === 'Expense').reverse();
+            
+            if (expenses.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500">No expenses recorded yet.</td></tr>`;
+            } else {
+                tbody.innerHTML = expenses.map(t => {
+                    const dateObj = new Date(t.date);
+                    const formattedDate = isNaN(dateObj) ? t.date : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    
+                    return `
+                    <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td class="p-3 text-sm text-gray-400 whitespace-nowrap">${formattedDate}</td>
+                        <td class="p-3">
+                            <span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-md text-xs font-medium tracking-wide shadow-sm">
+                                ${t.category}
+                            </span>
+                        </td>
+                        <td class="p-3 font-bold text-gray-200">৳${parseFloat(t.amount).toFixed(2)}</td>
+                        <td class="p-3 text-gray-400 text-sm max-w-xs truncate" title="${t.notes || ''}">${t.notes || '-'}</td>
+                    </tr>`;
+                }).join('');
+            }
+            
+            modal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            });
+        }
+
+        function closeDetailsModal() {
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
         document.getElementById('transactionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             const originalText = btn.innerText;
-            btn.innerText = 'Saving...';
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.innerText = 'Saving...'; btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             const payload = {
                 action: 'addTransaction',
@@ -247,19 +311,16 @@
             };
             
             await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), headers:{ 'Content-Type': 'text/plain' } });
-            
-            e.target.reset();
-            btn.innerText = originalText;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
-            fetchData();
+            e.target.reset(); document.getElementById('tDate').valueAsDate = new Date();
+            btn.innerText = originalText; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            fetchData(); // Instant sync after save
         });
 
         document.getElementById('categoryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             const originalText = btn.innerText;
-            btn.innerText = 'Creating...';
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.innerText = 'Creating...'; btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             const payload = {
                 action: 'addCategory',
@@ -269,17 +330,13 @@
             };
             
             await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), headers:{ 'Content-Type': 'text/plain' } });
-            
             e.target.reset();
-            btn.innerText = originalText;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.innerText = originalText; btn.classList.remove('opacity-50', 'cursor-not-allowed');
             fetchData();
         });
 
-        // Set default date to today
         document.getElementById('tDate').valueAsDate = new Date();
-
-        // Initial Load
         fetchData();
     </script>
 </body>
+</html>
